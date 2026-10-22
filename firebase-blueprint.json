@@ -1,0 +1,231 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "Progress and profile record of an elementary school student in GROW PUZZLE DIGITAL",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Student ID like siswa_01",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Student name",
+          "maxLength": 100
+        },
+        "grade": {
+          "type": "string",
+          "description": "Class grade e.g. IV B",
+          "maxLength": 20
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Avatar code e.g. boy1, girl1",
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "description": "Progress status",
+          "enum": ["belum_mulai", "sedang_bermain", "selesai"]
+        },
+        "score": {
+          "type": "number",
+          "description": "Total score from 0 to 250"
+        },
+        "completedQuestions": {
+          "type": "array",
+          "description": "List of question numbers answered correctly"
+        },
+        "attempts": {
+          "type": "object",
+          "description": "Map of question ID to attempt count"
+        },
+        "answers": {
+          "type": "object",
+          "description": "Map of question ID to chosen option index"
+        },
+        "currentPosition": {
+          "type": "number",
+          "description": "Current position on the adventure board (1 to 25)"
+        },
+        "unlockedPuzzlePieces": {
+          "type": "array",
+          "description": "List of unlocked puzzle piece indices (0 to 5)"
+        },
+        "unlockedBadges": {
+          "type": "array",
+          "description": "List of unlocked badge IDs"
+        },
+        "initialGrowMapCompleted": {
+          "type": "boolean",
+          "description": "Whether initial GROW MAP has been submitted"
+        },
+        "finalGrowMapCompleted": {
+          "type": "boolean",
+          "description": "Whether final GROW MAP has been submitted"
+        },
+        "growMapInitial": {
+          "type": "object",
+          "description": "Initial GROW MAP responses"
+        },
+        "growMapFinal": {
+          "type": "object",
+          "description": "Final GROW MAP responses"
+        },
+        "reflectionAnswers": {
+          "type": "object",
+          "description": "Student qualitative reflections"
+        },
+        "supportChallengeDone": {
+          "type": "boolean",
+          "description": "Whether collaborative support challenge is marked"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "description": "ISO timestamp of last activity",
+          "maxLength": 50
+        },
+        "userId": {
+          "type": "string",
+          "description": "Optional Firebase Auth UID linked to this student record",
+          "maxLength": 128
+        }
+      },
+      "required": ["id", "name", "grade", "score", "status"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Live event logged whenever student performs an action in the game",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique activity log ID",
+          "maxLength": 128
+        },
+        "studentId": {
+          "type": "string",
+          "description": "Student identifier",
+          "maxLength": 64
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Student name",
+          "maxLength": 100
+        },
+        "activityType": {
+          "type": "string",
+          "description": "Type of activity",
+          "enum": [
+            "app_opened",
+            "question_correct",
+            "question_retry",
+            "puzzle_unlocked",
+            "badge_earned",
+            "grow_map_saved",
+            "game_completed"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the activity",
+          "maxLength": 255
+        },
+        "scoreAtTime": {
+          "type": "number",
+          "description": "Score at the time of the activity"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "studentId", "studentName", "activityType", "description"]
+    },
+    "ClassSettings": {
+      "title": "ClassSettings",
+      "description": "Global classroom settings managed by teacher",
+      "type": "object",
+      "properties": {
+        "className": {
+          "type": "string",
+          "description": "Name of the class",
+          "maxLength": 50
+        },
+        "soundEnabled": {
+          "type": "boolean",
+          "description": "Sound effects active state"
+        },
+        "autoNarrate": {
+          "type": "boolean",
+          "description": "Automatic narration state"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last settings update",
+          "maxLength": 50
+        }
+      },
+      "required": ["className"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Authenticated user profile",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 150
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 100
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Avatar photo URL",
+          "maxLength": 500
+        },
+        "role": {
+          "type": "string",
+          "description": "User role: teacher or student",
+          "enum": ["teacher", "student"]
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "ISO timestamp of last sign in",
+          "maxLength": 50
+        }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Stores individual student progress, scores, puzzles, and badges"
+    },
+    "/activities/{activityId}": {
+      "schema": "ActivityLog",
+      "description": "Live activity logs generated as students interact with challenges"
+    },
+    "/settings/{settingId}": {
+      "schema": "ClassSettings",
+      "description": "Stores class configuration and audio preferences"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores authenticated user profiles"
+    }
+  }
+}

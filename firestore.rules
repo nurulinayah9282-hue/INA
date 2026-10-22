@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isTeacher() {
+      return isSignedIn() && (
+        request.auth.token.email == 'nurulinayah9282@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher')
+      );
+    }
+
+    // Student entity validator
+    function isValidStudent(data) {
+      return data.id is string && data.id.size() <= 64 && isValidId(data.id) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.grade is string && data.grade.size() <= 20 &&
+             data.score is number && data.score >= 0 && data.score <= 250 &&
+             data.status in ['belum_mulai', 'sedang_bermain', 'selesai'];
+    }
+
+    // Activity log validator
+    function isValidActivity(data) {
+      return data.id is string && data.id.size() <= 128 && isValidId(data.id) &&
+             data.studentId is string && data.studentId.size() <= 64 &&
+             data.studentName is string && data.studentName.size() <= 100 &&
+             data.activityType in [
+               'app_opened',
+               'question_correct',
+               'question_retry',
+               'puzzle_unlocked',
+               'badge_earned',
+               'grow_map_saved',
+               'game_completed'
+             ] &&
+             data.description is string && data.description.size() <= 255;
+    }
+
+    // User profile validator
+    function isValidUser(data, uid) {
+      return data.uid is string && data.uid == uid && data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 150 &&
+             data.role in ['teacher', 'student'] &&
+             (data.role != 'teacher' || request.auth.token.email == 'nurulinayah9282@gmail.com');
+    }
+
+    // Class settings validator
+    function isValidSettings(data) {
+      return data.className is string && data.className.size() <= 50;
+    }
+
+    // Match rules for Students
+    match /students/{studentId} {
+      allow read: if true;
+      allow create, update: if isValidId(studentId) && isValidStudent(incoming());
+      allow delete: if isTeacher();
+    }
+
+    // Match rules for Live Activity Logs
+    match /activities/{activityId} {
+      allow read: if true;
+      allow create: if isValidId(activityId) && isValidActivity(incoming());
+      allow update, delete: if isTeacher();
+    }
+
+    // Match rules for Class Settings
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow create, update: if isTeacher() && isValidId(settingId) && isValidSettings(incoming());
+      allow delete: if isTeacher();
+    }
+
+    // Match rules for User Accounts
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isTeacher());
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidId(userId) && isValidUser(incoming(), userId);
+      allow delete: if isTeacher();
+    }
+  }
+}
